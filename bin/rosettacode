@@ -1,0 +1,4 @@
+#!/usr/bin/perl
+
+use RosettaCode;
+RosettaCode->run;
