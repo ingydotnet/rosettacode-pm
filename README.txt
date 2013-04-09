@@ -1,19 +1,35 @@
-GitRosettaCode is a project to attempt to make it easy to fetch and run code
-examples from the RosettaCode website (http://rosettacode.org).
+NAME
+    RosettaCode - An Application to interface with http://rosettacode.org
 
-RosettaCode is a programming chrestomathy wiki that has a matrix of ~650
-programming task vs ~500 programming languages, with user contributed code
-examples for many of the combinations.
+SYNOPSIS
+    From the command line:
 
-Running example code usually involves copy/pasting from the website to some
-format that the language expects to find source code in. The copy process often
-adds undesired whitespace to the code. After you get the code in the right
-place you need to figure out how to use the language with the code.
+        > rosettacode help
+        > git clone git://github.com/acmeism/RosettaCode.git
+        > cd RosettaCode
+        > rosettacode sync --target=.
 
-The idea of this project is to simplify things as much as possible, by:
+DESCRIPTION
+    RosettaCode.org is a fantastic wiki that contains ~ 650 programming
+    tasks, each implemented in up to ~ 500 programming languages.
 
-* Having the code live in a GitHub repository (synced to rosettacode.org)
-* Having automation (ie Makefiles and .bat files) to build and run the code
-* Having automation and/or instructions for installing languages/runtimes
+    This tool aims to make it easier for programmers to obtain and try the
+    various code samples.
 
-Having things on GitHub will also allow for Pull Request contributions.
+    At this point, the main function is to extract the code examples and put
+    them into a git repository on GitHub. You probably don't need to use
+    this tool yourself. You can just get the repository here:
+
+        git clone git://github.com/acmeism/RosettaCode.git
+
+AUTHOR
+    Ingy döt Net <ingy@cpan.org>
+
+COPYRIGHT AND LICENSE
+    Copyright (c) 2013. Ingy döt Net.
+
+    This program is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
+    See http://www.perl.com/perl/misc/Artistic.html
+
