@@ -59,16 +59,17 @@ sub validate_args {
 
 sub execute {
     my ($self) = @_;
-    $self->conf;        # Build the conf object, which sets up the environment.
+
+    # First, build the conf object, which sets up the environment.
+    $self->conf;
+
     for my $lang (sort keys %{$self->langs}) {
-        my $url = $lang;
-        my $content = $self->fetch_lang($url);
-        $self->write_file("Lang/$url/0DESCRIPTION", $content);
+        my $info = $self->langs->{$lang};
+        $self->parse_lang_page($info, $self->fetch_lang($info));
     }
     for my $task (sort keys %{$self->tasks}) {
-        my $task_info = $self->tasks->{$task};
-        my $content = $self->fetch_task($task_info->{url});
-        $self->parse_task_page($task, $content);
+        my $info = $self->tasks->{$task};
+        $self->parse_task_page($info, $self->fetch_task($info));
     }
 }
 
@@ -99,31 +100,39 @@ sub parse_description {
     return ($text, $meta);
 }
 
+sub parse_lang_page {
+    my ($self, $info, $content) = @_;
+    $self->write_file("Lang/$info->{path}/0DESCRIPTION", $content);
+}
+
 sub parse_task_page {
-    my ($self, $task, $content) = @_;
+    my ($self, $info, $content) = @_;
     $content =~ s/\r//g;
     $content =~ s/\n?\z/\n/;
     my ($text, $meta) = $self->parse_description(\$content)
-        or $self->parse_fail($task, $content);
-    my $dir = $self->tasks->{$task}{url};
-    my $file = $self->tasks->{$task}{file};
-    $self->write_file("Task/$dir/0DESCRIPTION", $text);
-    YAML::XS::DumpFile("Task/$dir/1META.yaml", $meta) if $meta;
+        or $self->parse_fail($info->{name}, $content);
+    my $path = $info->{path};
+    my $file = lc($path);
+    $self->write_file("Task/$path/0DESCRIPTION", $text);
+    YAML::XS::DumpFile("Task/$path/1META.yaml", $meta) if $meta;
 
     while (length $content) {
         my ($lang, @sections) = $self->parse_next_lang_section(\$content)
-            or $self->parse_fail($task, $content);
+            or $self->parse_fail($info->{name}, $content);
         next unless $self->langs->{$lang};
         next unless @sections;
-        unlink("Lang/$lang/$dir");
-        io->link("Lang/$lang/$dir")
-            ->assert->symlink("../../Task/$dir/$lang");
-        my $first = shift @sections;
+        my $lang_path = $self->langs->{$lang}->{path};
         my $ext = $self->langs->{$lang}->{ext};
-        $self->write_file("Task/$dir/$lang/$file.$ext", $first);
-        my $count = 2;
+        unlink("Lang/$lang_path/$path");
+        io->link("Lang/$lang_path/$path")
+            ->assert->symlink("../../Task/$path/$lang_path");
+        if (@sections == 1) {
+            $self->write_file("Task/$path/$lang_path/$file.$ext", $sections[0]);
+            next;
+        }
+        my $count = 1;
         for (@sections) {
-            $self->write_file("Task/$dir/$lang/$file-$count.$ext", $_);
+            $self->write_file("Task/$path/$lang_path/$file-$count.$ext", $_);
             $count++;
         }
     }
@@ -147,54 +156,59 @@ sub parse_next_lang_section {
 }
 
 sub fetch_task {
-    my ($self, $name) = @_;
-    my $file = io->file("Cache/Task/$name");
+    my ($self, $info) = @_;
+    my $file = io->file("Cache/Task/$info->{path}")->utf8;
     if ($file->exists and time - $file->mtime < CACHE_TIME) {
         return $file->all;
     }
     else {
-        my $content = $self->bot->get_text($name);
-        $file->assert->utf8->print($content);
+        my $content = $self->bot->get_text($info->{name});
+        $file->assert->print($content);
         return $content;
     }
 }
 
 sub fetch_lang {
-    my ($self, $name) = @_;
-    $name = ":Category:$name";
-    my $file = io->file("Cache/Lang/$name");
+    my ($self, $info) = @_;
+    my $file = io->file("Cache/Lang/$info->{path}")->utf8;
     if ($file->exists and time - $file->mtime < CACHE_TIME) {
         return $file->all;
     }
     else {
-        my $content = $self->bot->get_text($name);
-        $file->assert->utf8->print($content);
+        my $content = $self->bot->get_text(":Category:$info->{name}");
+        $file->assert->print($content);
         return $content;
     }
 }
 
 sub build_tasks {
     my ($self) = @_;
-    my $io = io->file(TASKS_FILE);
+    my $io = io->file(TASKS_FILE)->utf8;
     my @task_list;
     if ($io->exists and time - $io->mtime < CACHE_TIME) {
          @task_list = $io->chomp->slurp;
     }
     else {
         @task_list = $self->bot->get_pages_in_category(TASKS_CATEGORY);
-        $io->utf8->println($_) for @task_list;
+        $io->assert->println($_) for @task_list;
     }
     my $tasks = YAML::XS::LoadFile('Conf/task.yaml');
-    for my $task (keys %$tasks) {
-        ($tasks->{$task}{url} = $task) =~ s/ /_/g;
-        ($tasks->{$task}{file} = lc($task)) =~ s/[^a-z0-9]/_/g;
+    for my $name (keys %$tasks) {
+        my $info = $tasks->{$name} ||= {};
+        $info->{name} = $name;
+        $info->{url} = $name;
+        $info->{url} =~ s/ /_/g;
+        $info->{path} = $name;
+        $info->{path} =~ s/[\ \/]/-/g;
+        $info->{path} =~ s/[\*\!\']/_/g;
     }
+    YAML::XS::DumpFile("Meta/00Tasks.yaml", $tasks);
     return $tasks;
 }
 
 sub build_langs {
     my ($self) = @_;
-    my $io = io->file(LANGS_FILE);
+    my $io = io->file(LANGS_FILE)->utf8;
     my @lang_list;
     if ($io->exists and time - $io->mtime < CACHE_TIME) {
          @lang_list = $io->chomp->slurp;
@@ -204,12 +218,21 @@ sub build_langs {
             s/^Category://;
             $_;
         } $self->bot->get_pages_in_category(LANGS_CATEGORY);
-        $io->utf8->println($_) for @lang_list;
+        $io->assert->println($_) for @lang_list;
     }
     my $langs = YAML::XS::LoadFile('Conf/lang.yaml');
-    for my $lang (keys %$langs) {
-        die $lang unless $langs->{$lang}{ext};
+    for my $name (keys %$langs) {
+        my $info = $langs->{$name} ||= {};
+        $info->{name} = $name;
+        $info->{url} = $name;
+        $info->{url} =~ s/ /_/g;
+        $info->{path} = $name;
+        $info->{path} =~ s/[\ \/]/-/g;
+        $info->{path} =~ s/[\*\!]/_/g;
+        $info->{ext} ||= lc($name);
+        $info->{ext} =~ s/ .*//;
     }
+    YAML::XS::DumpFile("Meta/00Langs.yaml", $langs);
     return $langs;
 }
 
