@@ -1,6 +1,6 @@
 # Revision history for {{$dist->name}}
 ---
 version: 0.0.1
-date:    Mon Apr  8 21:04:17 PDT 2013
+date:    Thu Apr 11 11:16:25 PDT 2013
 changes:
 - Initial release

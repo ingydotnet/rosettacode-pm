@@ -7,7 +7,7 @@ SYNOPSIS
         > rosettacode help
         > git clone git://github.com/acmeism/RosettaCode.git
         > cd RosettaCode
-        > rosettacode sync --target=.
+        > rosettacode sync .
 
 DESCRIPTION
     RosettaCode.org is a fantastic wiki that contains ~ 650 programming
@@ -21,6 +21,8 @@ DESCRIPTION
     this tool yourself. You can just get the repository here:
 
         git clone git://github.com/acmeism/RosettaCode.git
+
+    This tool will just update all the files in that repository.
 
 AUTHOR
     Ingy döt Net <ingy@cpan.org>

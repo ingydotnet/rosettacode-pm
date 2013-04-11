@@ -3,6 +3,7 @@ package RosettaCode;
 
 our $VERSION = '0.0.1';
 
+use utf8;
 use MediaWiki::Bot;
 use YAML::XS;
 
@@ -25,10 +26,11 @@ extends 'RosettaCode::Command';
 
 use IO::All;
 
-use constant abstract => 'Sync local mirror with remote RosettaCode wiki';
+use constant abstract => 'Sync local repository with remote RosettaCode wiki';
 use constant usage_desc => 'rosettacode sync <target_directory> [<options>]';
 use constant options => [qw( target )];
 
+use constant ROSETTACODE_API_URL => 'http://rosettacode.org/mw/api.php';
 use constant TASKS_FILE => 'Cache/tasks.txt';
 use constant LANGS_FILE => 'Cache/langs.txt';
 use constant TASKS_CATEGORY => 'Category:Programming_Tasks';
@@ -36,13 +38,16 @@ use constant LANGS_CATEGORY => 'Category:Programming_Languages';
 use constant CACHE_TIME => 24 * 60 * 60;    # 24 hours
 
 has bot => (builder => 'build_bot');
-has conf => (default => sub {
-    my ($self) = @_;
-    RosettaCode::Conf->new(root => $self->target);
-});
 has tasks => (builder => 'build_tasks');
 has langs => (builder => 'build_langs');
 has target => ();
+
+my $Log;
+sub Log {
+    my ($string, @args) = @_;
+    my $time = gmtime();
+    $Log->append(sprintf "<$time> $string\n", @args);
+}
 
 sub validate_args {
     my ($self, $opts, $args) = @_;
@@ -60,9 +65,13 @@ sub validate_args {
 sub execute {
     my ($self) = @_;
 
-    # First, build the conf object, which sets up the environment.
-    $self->conf;
+    {
+        my $target = $self->target;
+        chdir $target or die "Can't chdir to '$target'";
+        $Log = io->file('rosettacode.log')->utf8;
+    }
 
+    Log 'START RosettaCode Sync';
     for my $lang (sort keys %{$self->langs}) {
         my $info = $self->langs->{$lang};
         $self->parse_lang_page($info, $self->fetch_lang($info));
@@ -71,26 +80,76 @@ sub execute {
         my $info = $self->tasks->{$task};
         $self->parse_task_page($info, $self->fetch_task($info));
     }
+    Log 'COMPLETE RosettaCode Sync';
+}
+
+# TODO Parse out meta information from Language description text.
+sub parse_lang_page {
+    my ($self, $info, $content) = @_;
+    Log "Parse Language '$info->{name}'";
+    $self->write_file("Lang/$info->{path}/0DESCRIPTION", $content);
+}
+
+sub parse_task_page {
+    my ($self, $info, $content) = @_;
+    Log "Parse Task '$info->{name}'";
+    $content =~ s/\r//g;
+    $content =~ s/\n?\z/\n/;
+    my ($text, $meta) = $self->parse_description(\$content)
+        or $self->parse_fail($info->{name}, $content);
+    my $path = $info->{path};
+    my $file = lc($path);
+
+    while (length $content) {
+        my ($lang, @sections) = $self->parse_next_lang_section(\$content)
+            or $self->parse_fail($info->{name}, $content);
+        next unless $self->langs->{$lang};
+        next unless @sections;
+        my $lang_path = $self->langs->{$lang}->{path};
+        my $ext = $self->langs->{$lang}->{ext} || '';
+        $ext = ".$ext" if $ext;
+        my $source = "Lang/$lang_path/$path";
+        my $target = "../../Task/$path/$lang_path";
+        Log "Symlink $source -> $target";
+        unlink($source);
+        io->link($source)->assert->symlink($target);
+        if (@sections == 1) {
+            $self->write_file("Task/$path/$lang_path/$file$ext", $sections[0]);
+            next;
+        }
+        unlink "Task/$path/$lang_path/$file$ext";
+        my $count = 1;
+        for (@sections) {
+            $self->write_file("Task/$path/$lang_path/$file-$count$ext", $_);
+            $count++;
+        }
+    }
+
+    $self->write_file("Task/$path/0DESCRIPTION", $text);
+    $self->dump_file("Task/$path/1META.yaml", $meta) if $meta;
 }
 
 sub parse_description {
     my ($self, $content) = @_;
-    $$content =~ s/\A\{\{task(?:\|(.*?))?\}\}(.*?\n)(?===\{\{)//s or return;
+    $$content =~ s/\A\[\[File:.*\s*//;
+    $$content =~ s/\A\{\{[Cc]larified-review\}\}\s*//;
+    $$content =~ s/\A\{\{[Cc]larify task\}\}\s*//;
+    $$content =~ s/\A\{\{[Ww]ikipedia[^\}]*\}\}\s*//;
+    $$content =~ s/\A\{\{[Tt]ask(?:\|([^\}]*?))?\}\}(.*?\n)(?===\{\{)//s or return;
     my ($note, $text) = ($1, $2);
-    my $original = $text;
     my $meta = $note ? {note => $note} : undef;
     while ($text =~ /\A\s*(?:\{\{requires|\[\[Category:)/) {
         $meta ||= {};
-        if ($text =~ s/\A\s*\{\{requires\|(\w+)\}\}//) {
+        if ($text =~ s/\A\s*\{\{requires\|(\w[\w ]*)\}\}//) {
             $meta->{requires} ||= [];
             push @{$meta->{requires}}, $1;
         }
-        elsif ($text =~ s/\A\s*\[\[Category:(\w[\w ]*)\]\]//) {
+        elsif ($text =~ s/\A\s*\[\[Category: *(\w[\w ]*)\]\]//) {
             $meta->{category} ||= [];
             push @{$meta->{category}}, $1;
         }
         else {
-            $$content = $original . $$content;
+            die $text;
             return;
         }
     }
@@ -100,48 +159,11 @@ sub parse_description {
     return ($text, $meta);
 }
 
-sub parse_lang_page {
-    my ($self, $info, $content) = @_;
-    $self->write_file("Lang/$info->{path}/0DESCRIPTION", $content);
-}
-
-sub parse_task_page {
-    my ($self, $info, $content) = @_;
-    $content =~ s/\r//g;
-    $content =~ s/\n?\z/\n/;
-    my ($text, $meta) = $self->parse_description(\$content)
-        or $self->parse_fail($info->{name}, $content);
-    my $path = $info->{path};
-    my $file = lc($path);
-    $self->write_file("Task/$path/0DESCRIPTION", $text);
-    YAML::XS::DumpFile("Task/$path/1META.yaml", $meta) if $meta;
-
-    while (length $content) {
-        my ($lang, @sections) = $self->parse_next_lang_section(\$content)
-            or $self->parse_fail($info->{name}, $content);
-        next unless $self->langs->{$lang};
-        next unless @sections;
-        my $lang_path = $self->langs->{$lang}->{path};
-        my $ext = $self->langs->{$lang}->{ext};
-        unlink("Lang/$lang_path/$path");
-        io->link("Lang/$lang_path/$path")
-            ->assert->symlink("../../Task/$path/$lang_path");
-        if (@sections == 1) {
-            $self->write_file("Task/$path/$lang_path/$file.$ext", $sections[0]);
-            next;
-        }
-        my $count = 1;
-        for (@sections) {
-            $self->write_file("Task/$path/$lang_path/$file-$count.$ext", $_);
-            $count++;
-        }
-    }
-}
-
 sub parse_next_lang_section {
     my ($self, $content) = @_;
-    $$content =~ s/\A==\{\{header\|(.*?)\}\}(.*?\n)(?:\z|(?===\{\{))//s or return;
+    $$content =~ s/\A==\{\{[Hh]eader\|(.*?)\}\}(.*?\n)(?:\z|(?===\{\{))//s or return;
     my ($lang, $text) = ($1, $2);
+    Log "Parse language section: '$lang'";
     my $original = $text;
     my @sections;
     while ($text =~ s/<lang(?: [^>]+)?>(.*?)<\/lang>//s) {
@@ -162,7 +184,7 @@ sub fetch_task {
         return $file->all;
     }
     else {
-        my $content = $self->bot->get_text($info->{name});
+        my $content = $self->get_text($info->{name});
         $file->assert->print($content);
         return $content;
     }
@@ -175,7 +197,7 @@ sub fetch_lang {
         return $file->all;
     }
     else {
-        my $content = $self->bot->get_text(":Category:$info->{name}");
+        my $content = $self->get_text(":Category:$info->{name}");
         $file->assert->print($content);
         return $content;
     }
@@ -189,7 +211,7 @@ sub build_tasks {
          @task_list = $io->chomp->slurp;
     }
     else {
-        @task_list = $self->bot->get_pages_in_category(TASKS_CATEGORY);
+        @task_list = $self->get_category(TASKS_CATEGORY);
         $io->assert->println($_) for @task_list;
     }
     my $tasks = YAML::XS::LoadFile('Conf/task.yaml');
@@ -199,10 +221,12 @@ sub build_tasks {
         $info->{url} = $name;
         $info->{url} =~ s/ /_/g;
         $info->{path} = $name;
-        $info->{path} =~ s/[\ \/]/-/g;
-        $info->{path} =~ s/[\*\!\']/_/g;
+        $info->{path} =~ s/[\'\"]//g;
+        $info->{path} =~ s/[\ \/\*\!\(\)\x{7f}-\x{ffff}]/-/g;
+        #$info->{path} =~ s/^-*(.*?)-*$/$1/;
+        die unless $info->{path};
     }
-    YAML::XS::DumpFile("Meta/00Tasks.yaml", $tasks);
+    $self->dump_file("Meta/Task.yaml", $tasks);
     return $tasks;
 }
 
@@ -217,7 +241,7 @@ sub build_langs {
         @lang_list = map {
             s/^Category://;
             $_;
-        } $self->bot->get_pages_in_category(LANGS_CATEGORY);
+        } $self->get_category(LANGS_CATEGORY);
         $io->assert->println($_) for @lang_list;
     }
     my $langs = YAML::XS::LoadFile('Conf/lang.yaml');
@@ -226,19 +250,31 @@ sub build_langs {
         $info->{name} = $name;
         $info->{url} = $name;
         $info->{url} =~ s/ /_/g;
+        $name =~ s/é/e/g;
+        $name =~ s/à/a/g;
         $info->{path} = $name;
-        $info->{path} =~ s/[\ \/]/-/g;
-        $info->{path} =~ s/[\*\!]/_/g;
-        $info->{ext} ||= lc($name);
-        $info->{ext} =~ s/ .*//;
+        $info->{path} =~ s/[\ \/\*\!]/-/g;
+        if (not exists $info->{ext}) {
+            $info->{ext} = lc($name);
+            $info->{ext} = 'net' if $info =~ /\.net$/;
+            $info->{ext} = 'bas' if $info =~ /basic/;
+            $info->{ext} = 'pas' if $info =~ /pascal/;
+            $info->{ext} =~ s/ *script$//;
+            $info->{ext} =~ s/[\ \/].*//;
+            $info->{ext} =~ s/\+/p/g;
+        }
+        $info->{ext} ||= '';
     }
-    YAML::XS::DumpFile("Meta/00Langs.yaml", $langs);
+    Log "Dump YAML 'Meta/Lang.yaml'";
+    my $yaml = YAML::XS::Dump($langs);
+    $yaml =~ s/FALSE/'FALSE'/g;     # Fix YAML for Ruby
+    io->file("Meta/Lang.yaml")->assert->print($yaml);
     return $langs;
 }
 
 sub build_bot {
     my ($self) = @_;
-    $self->conf->api_url =~ m!^(https?)://([^/]+)/(.*)/api.php$! or die;
+    ROSETTACODE_API_URL =~ m!^(https?)://([^/]+)/(.*)/api.php$! or die;
     my ($protocol, $host, $path) = ($1, $2, $3);
     MediaWiki::Bot->new({
         assert => 'bot',
@@ -248,29 +284,35 @@ sub build_bot {
     });
 }
 
+sub get_text {
+    my ($self, $name) = @_;
+    Log "Fetch MediaWiki text for '$name'";
+    return $self->bot->get_text($name);
+}
+
+sub get_category {
+    my ($self, $category) = @_;
+    Log "Fetch MediaWiki category '$category'";
+    $self->bot->get_pages_in_category($category, {max => 0});
+}
+
 sub write_file {
     my ($self, $file, $content) = @_;
+    Log "Write '$file'";
     io->file($file)->assert->utf8->print($content);
+}
+
+sub dump_file {
+    my ($self, $file, $object) = @_;
+    Log "Dump YAML '$file'";
+    YAML::XS::DumpFile($file, $object);
 }
 
 sub parse_fail {
     my ($self, $task, $content) = @_;
-    die "Task '$task' parse failed:\n" . substr($content, 0, 200) . "\n";
-}
-
-package RosettaCode::Conf;
-use Mo qw'build builder default xxx';
-
-has root => ();
-has api_url => ();
-has task_list => ();
-has lang_list => ();
-
-sub BUILD {
-    my ($self) = @_;
-    my $root = $self->root;
-    chdir $root or die "Can't chdir to '$root'";
-    %$self = %{YAML::XS::LoadFile("Conf/rosettacode.yaml")};
+    my $msg = "Task '$task' parse failed:\n" . substr($content, 0, 200);
+    Log $msg;
+    die $msg;
 }
 
 1;
@@ -288,7 +330,7 @@ From the command line:
     > rosettacode help
     > git clone git://github.com/acmeism/RosettaCode.git
     > cd RosettaCode
-    > rosettacode sync --target=.
+    > rosettacode sync .
 
 =head1 DESCRIPTION
 
@@ -303,6 +345,8 @@ into a git repository on GitHub. You probably don't need to use this tool
 yourself. You can just get the repository here:
 
     git clone git://github.com/acmeism/RosettaCode.git
+
+This tool will just update all the files in that repository.
 
 =head1 AUTHOR
 
