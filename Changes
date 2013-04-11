@@ -1,5 +1,10 @@
 # Revision history for {{$dist->name}}
 ---
+version: 0.0.2
+date:    Thu Apr 11 12:27:55 PDT 2013
+changes:
+- Initial release
+---
 version: 0.0.1
 date:    Thu Apr 11 11:16:25 PDT 2013
 changes:
