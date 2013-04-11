@@ -1,7 +1,7 @@
 use v5.14;
 package RosettaCode;
 
-our $VERSION = '0.0.2';
+our $VERSION = '0.0.3';
 
 use utf8;
 use MediaWiki::Bot;
@@ -87,9 +87,9 @@ sub execute {
 sub parse_lang_page {
     my ($self, $info, $content) = @_;
     Log "Parse Language '$info->{name}'";
-    $self->write_symlink(
-        "Lang/$info->{path}/00SOURCE",
-        "http://rosettacode.org/wiki/Category:$info->{url}",
+    $self->write_file(
+        "Lang/$info->{path}/README",
+        "Data source: http://rosettacode.org/wiki/Category:$info->{url}\n",
     );
     $self->write_file("Lang/$info->{path}/00DESCRIPTION", $content);
 }
@@ -127,9 +127,9 @@ sub parse_task_page {
         }
     }
 
-    $self->write_symlink(
-        "Task/$path/00SOURCE",
-        "http://rosettacode.org/wiki/$info->{url}",
+    $self->write_file(
+        "Task/$path/README",
+        "Data source: http://rosettacode.org/wiki/$info->{url}\n",
     );
     $self->write_file("Task/$path/00DESCRIPTION", $text);
     $self->dump_file("Task/$path/00META.yaml", $meta) if $meta;
