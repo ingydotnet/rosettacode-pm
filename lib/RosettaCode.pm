@@ -1,7 +1,7 @@
 use v5.14;
 package RosettaCode;
 
-our $VERSION = '0.0.4';
+our $VERSION = '0.0.5';
 
 use utf8;
 use MediaWiki::Bot;
@@ -341,8 +341,8 @@ RosettaCode - An Application to interface with http://rosettacode.org
 From the command line:
 
     > rosettacode help
-    > git clone git://github.com/acmeism/RosettaCode.git
-    > cd RosettaCode
+    > git clone git://github.com/acmeism/RosettaCodeData.git
+    > cd RosettaCodeData
     > rosettacode sync .
 
 =head1 DESCRIPTION
@@ -357,7 +357,7 @@ At this point, the main function is to extract the code examples and put them
 into a git repository on GitHub. You probably don't need to use this tool
 yourself. You can just get the repository here:
 
-    git clone git://github.com/acmeism/RosettaCode.git
+    git clone git://github.com/acmeism/RosettaCodeData.git
 
 This tool will just update all the files in that repository.
 

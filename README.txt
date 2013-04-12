@@ -5,8 +5,8 @@ SYNOPSIS
     From the command line:
 
         > rosettacode help
-        > git clone git://github.com/acmeism/RosettaCode.git
-        > cd RosettaCode
+        > git clone git://github.com/acmeism/RosettaCodeData.git
+        > cd RosettaCodeData
         > rosettacode sync .
 
 DESCRIPTION
@@ -20,7 +20,7 @@ DESCRIPTION
     them into a git repository on GitHub. You probably don't need to use
     this tool yourself. You can just get the repository here:
 
-        git clone git://github.com/acmeism/RosettaCode.git
+        git clone git://github.com/acmeism/RosettaCodeData.git
 
     This tool will just update all the files in that repository.
 

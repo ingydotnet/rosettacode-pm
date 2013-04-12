@@ -1,5 +1,10 @@
 # Revision history for {{$dist->name}}
 ---
+version: 0.0.5
+date:    Fri Apr 12 14:21:33 PDT 2013
+changes:
+- Change RosettaCode.git to RosettaCodeData.git
+---
 version: 0.0.4
 date:    Fri Apr 12 12:16:56 PDT 2013
 changes:
