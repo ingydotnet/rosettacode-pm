@@ -98,7 +98,7 @@ sub parse_task_page {
     my ($self, $info, $content) = @_;
     Log "Parse Task '$info->{name}'";
     $content =~ s/\r//g;
-    $content =~ s/\n?\z/\n/;
+    $content =~ s/\n?\z/\n/ if length $content;
     my ($text, $meta) = $self->parse_description(\$content)
         or $self->parse_fail($info->{name}, $content);
     my $path = $info->{path};
