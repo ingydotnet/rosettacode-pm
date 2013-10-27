@@ -99,6 +99,11 @@ sub parse_task_page {
     Log "Parse Task '$info->{name}'";
     $content =~ s/\r//g;
     $content =~ s/\n?\z/\n/ if length $content;
+    if ($content =~ /^#REDIRECT \[\[/) {
+        $content =~ s/\n.*//s;
+        Log "Skipping redirect: $content";
+        return;
+    }
     my ($text, $meta) = $self->parse_description(\$content)
         or $self->parse_fail($info->{name}, $content);
     my $path = $info->{path};
@@ -172,7 +177,7 @@ sub parse_next_lang_section {
     Log "Parse language section: '$lang'";
     my $original = $text;
     my @sections;
-    while ($text =~ s/<lang(?: [^>]+)?>(.*?)<\/lang>//s) {
+    while ($text =~ s/<lang(?: [^>]+)?>(.*?)<\/lang *>//si) {
         my $section = $1;
         $section =~ s/\A\s*\n//;
         $section =~ s/ *$//mg;
