@@ -1,5 +1,10 @@
 # Revision history for {{$dist->name}}
 ---
+version: 0.0.6
+date:    Sat Jul 26 11:58:04 PDT 2014
+changes:
+- Switch to Zilla::Dist
+---
 version: 0.0.5
 date:    Fri Apr 12 14:21:33 PDT 2013
 changes:
