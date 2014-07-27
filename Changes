@@ -1,5 +1,10 @@
 # Revision history for {{$dist->name}}
 ---
+version: 0.0.7
+date:    Sat Jul 26 20:01:32 PDT 2014
+changes:
+- Add dep for Mo::xxx
+---
 version: 0.0.6
 date:    Sat Jul 26 11:58:04 PDT 2014
 changes:

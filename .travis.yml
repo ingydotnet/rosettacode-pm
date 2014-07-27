@@ -22,6 +22,7 @@ install:
   IO::All
   MediaWiki::Bot
   Mo
+  Mo::xxx
   Module::Pluggable
   YAML::XS
 
