@@ -37,7 +37,7 @@ after_success:
 notifications:
   irc:
     channels:
-    - irc.freenode.net#ingy
+    - irc.freenode.net#pkg
     on_success: change
     on_failure: always
     skip_join: true

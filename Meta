@@ -1,7 +1,7 @@
 =meta: 0.0.1
 
 name: RosettaCode
-version: 0.0.7
+version: 0.0.8
 abstract: An Application to interface with http://rosettacode.org
 homepage: https://metacpan.org/release/RosettaCode
 
@@ -28,8 +28,8 @@ requires:
 devel:
   git: https://github.com/ingydotnet/rosettacode-pm
   bug: https://github.com/ingydotnet/rosettacode-pm/issues
-  irc: irc.freenode.net#ingy
+  irc: irc.freenode.net#pkg
 
 =travis:
   type: perl
-  irc: irc.freenode.net#ingy
+  irc: irc.freenode.net#pkg
