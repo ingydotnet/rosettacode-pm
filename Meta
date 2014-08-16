@@ -1,19 +1,25 @@
-=meta: 0.0.1
+=meta: 0.0.2
 
 name: RosettaCode
-version: 0.0.12
+version: 0.0.13
 abstract: An Application to interface with http://rosettacode.org
 homepage: https://metacpan.org/release/RosettaCode
-
+language: perl
 license: perl
-copyright: 2013-2014. Ingy döt Net.
+copyright: 2013-2014
+
 author:
   name: Ingy döt Net
   email: ingy@cpan.org
+  homepage: http://ingy.net
   github: ingydotnet
   twitter: ingydotnet
   freenode: ingy
-  homepage: http://ingy.net
+
+devel:
+  git: https://github.com/ingydotnet/rosettacode-pm
+  bug: https://github.com/ingydotnet/rosettacode-pm/issues
+  irc: irc.freenode.net#pkg
 
 requires:
   perl: 5.8.1
@@ -24,12 +30,3 @@ requires:
   Mo::xxx: 0
   Module::Pluggable: 0
   YAML::XS: 0
-
-devel:
-  git: https://github.com/ingydotnet/rosettacode-pm
-  bug: https://github.com/ingydotnet/rosettacode-pm/issues
-  irc: irc.freenode.net#pkg
-
-=travis:
-  type: perl
-  irc: irc.freenode.net#pkg

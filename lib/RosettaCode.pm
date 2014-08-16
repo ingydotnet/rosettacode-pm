@@ -1,5 +1,5 @@
 package RosettaCode;
-our $VERSION = '0.0.12';
+our $VERSION = '0.0.13';
 
 use utf8;
 use MediaWiki::Bot;
