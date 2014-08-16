@@ -1,7 +1,7 @@
 =meta: 0.0.2
 
 name: RosettaCode
-version: 0.0.13
+version: 0.0.14
 abstract: An Application to interface with http://rosettacode.org
 homepage: https://metacpan.org/release/RosettaCode
 language: perl
