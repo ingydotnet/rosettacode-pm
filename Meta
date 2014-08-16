@@ -1,7 +1,7 @@
 =meta: 0.0.1
 
 name: RosettaCode
-version: 0.0.11
+version: 0.0.12
 abstract: An Application to interface with http://rosettacode.org
 homepage: https://metacpan.org/release/RosettaCode
 
