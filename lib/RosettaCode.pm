@@ -141,10 +141,13 @@ sub parse_task_page {
 sub parse_description {
     my ($self, $content) = @_;
     $$content =~ s/\A\[\[File:.*\s*//;
+    $$content =~ s/\A\{\{alertbox\|.*\n\s*//;
     $$content =~ s/\A\{\{[Cc]larified-review\}\}\s*//;
     $$content =~ s/\A\{\{[Cc]larify task\}\}\s*//;
+    $$content =~ s/\A\{\{[Oo]mit from\|.*\}\}\s*//;
+    $$content =~ s/\A\[\[[Ff]ile:.*\]\]\s*//;
     $$content =~ s/\A\{\{[Ww]ikipedia[^\}]*\}\}\s*//;
-    $$content =~ s/\A\{\{[Tt]ask(?:\|([^\}]*?))?\}\}(.*?\n)(?===\{\{)//s or return;
+    $$content =~ s/\A\{\{(?:[Dd]raft\s+)?[Tt]ask(?:\|([^\}]*?))?\}\}(.*?\n)(?===\{\{)//s or return;
     my ($note, $text) = ($1, $2);
     my $meta = $note ? {note => $note} : undef;
     while ($text =~ /\A\s*(?:\{\{requires|\[\[Category:)/) {
