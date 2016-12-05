@@ -4,6 +4,7 @@ our $VERSION = '0.0.14';
 use utf8;
 use MediaWiki::Bot;
 use YAML::XS;
+use Carp;
 
 use App::Cmd::Setup ();
 App::Cmd::Setup->import(-app);
@@ -331,7 +332,7 @@ sub parse_fail {
     my ($self, $task, $content) = @_;
     my $msg = "Task '$task' parse failed:\n" . substr($content, 0, 200);
     Log $msg;
-    die $msg;
+    Carp::confess $msg;
 }
 
 1;
