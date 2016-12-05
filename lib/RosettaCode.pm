@@ -290,6 +290,10 @@ sub build_bot {
     ROSETTACODE_API_URL =~ m!^(https?)://([^/]+)/(.*)/api.php$! or die;
     my ($protocol, $host, $path) = ($1, $2, $3);
     MediaWiki::Bot->new({
+        agent =>
+            'rosettacodedata/' . $VERSION
+            . ' (https://github.com/ingydotnet/rosettacode-pm) MediaWiki::Bot/'
+            . MediaWiki::Bot->VERSION,
         assert => 'bot',
         protocol => $protocol,
         host => $host,
