@@ -1,4 +1,9 @@
 ---
+version: tba
+date: tba
+changes:
+- Add UserAgent header to Bot PR/1
+---
 version: 0.0.14
 date:    Sat Aug 16 15:05:02 PDT 2014
 changes:
