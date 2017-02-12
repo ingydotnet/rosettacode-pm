@@ -1,8 +1,8 @@
 ---
-version: tba
-date: tba
+version: 0.0.15
+date:    Sun Feb 12 14:12:06 PST 2017
 changes:
-- Add UserAgent header to Bot PR/1
+- Release after pause-cleanup removed wrong dists
 ---
 version: 0.0.14
 date:    Sat Aug 16 15:05:02 PDT 2014
