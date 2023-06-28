@@ -6,7 +6,7 @@ abstract: An Application to interface with http://rosettacode.org
 homepage: https://metacpan.org/release/RosettaCode
 language: perl
 license: perl
-copyright: 2013-2017
+copyright: 2013-2023
 
 author:
   name: Ingy döt Net
@@ -29,4 +29,7 @@ requires:
   Mo: 0
   Mo::xxx: 0
   Module::Pluggable: 0
-  YAML::XS: 0
+  YAML::PP: 0
+
+=zild:
+  no-travis: true
