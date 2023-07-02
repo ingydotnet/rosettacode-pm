@@ -1,12 +1,14 @@
 =meta: 0.0.2
 
 name: RosettaCode
-version: 0.0.15
+version: 0.1.1
 abstract: An Application to interface with http://rosettacode.org
 homepage: https://metacpan.org/release/RosettaCode
 language: perl
 license: perl
 copyright: 2013-2023
+
+branch: main
 
 author:
   name: Ingy döt Net
@@ -23,7 +25,6 @@ devel:
 
 requires:
   perl: 5.8.1
-  App::Cmd: 0
   IO::All: 0
   MediaWiki::Bot: 0
   Mo: 0

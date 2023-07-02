@@ -1,7 +1,7 @@
 use strict; use warnings;
 package RosettaCode;
 
-our $VERSION = '0.0.15';
+our $VERSION = '0.1.1';
 
 use RosettaCode::Lang;
 use RosettaCode::Task;
